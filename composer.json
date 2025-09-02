@@ -10,10 +10,8 @@
     "require": {
         "php": "^8.0.2",
         "barryvdh/laravel-debugbar": "^3.14",
-        "coba/api-postman": "@dev",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^9.19",
-        "laravel/nova": "^4.0",
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7"
     },
