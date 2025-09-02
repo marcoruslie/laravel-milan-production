@@ -155,7 +155,6 @@ Route::get('/app', function () {
     return view('layouts.app');
 });
 
-Auth::routes();
 
 Route::get('/home', [adminHomeController::class, 'index'])->middleware('adminRoutes')->name('home');
 Route::get('/pengawas', [adminHomeController::class, 'indexPengawas'])->middleware('adminRoutes')->name('dashboard');
