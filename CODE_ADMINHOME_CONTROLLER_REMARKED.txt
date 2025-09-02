@@ -1,0 +1,614 @@
+/*
+    public function getSap($mesin, $size)
+    {
+        $all = target_saps::where('kiln', $mesin)
+            ->where('size', $size)
+            ->first();
+        return $all->pcs_per_24hour;
+    }
+    */
+    /*
+    private function getTotalDownTimes()
+    {
+        // $dates = self::getCurrentMonthDates();
+        // $startDate = $dates['start_date'];
+        // $endDate = $dates['end_date'];
+        // $totalDays = $dates['total_days'];
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        $downTimes = down_time::whereBetween('created_at', [$startDate, $endDate])
+            ->get();
+        $totalDownTime = [];
+
+        for ($i = 0; $i < count($downTimes); $i++) {
+            $work_center = $downTimes[$i]->work_center;
+            // $startDateTime = DateTime::createFromFormat('His', $downTimes[$i]->start_time);
+            // $finishDateTime = DateTime::createFromFormat('His', $downTimes[$i]->finish_time);
+            // $interval = $startDateTime->diff($finishDateTime);
+            // $minutesDifference = ($interval->h * 60) + $interval->i;
+
+            if (!isset($totalDownTime[$work_center])) {
+                $totalDownTime[$work_center] = 0;
+            }
+
+            $totalDownTime[$work_center] += $downTimes[$i]->total;
+        }
+        // count every downtime total for each machine (1440 * totalDays) / totalDownTime
+
+        $totalMinutesInMonth = 1440 * 31;
+        $downtimePercentage = [];
+
+        foreach ($totalDownTime as $work_center => $total) {
+            $downtimePercentage[$work_center] = ($totalMinutesInMonth - $total);
+        }
+         //dd($downtimePercentage);
+        return $downtimePercentage;
+    }
+
+    private function getNetOperatingTimePerOrder()
+    {
+        $startDate = Carbon::create(2023, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2023, 5, 31, 23, 59, 59);
+        DB::statement("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+        $all = rk_hasil_produksi::with('user')
+            ->select('order_id', 'mesin_id', 'size', DB::raw('SUM(jumlah) as total_sum'))
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('order_id')
+            ->get();
+
+        // get hasil net operating time for every hasil produksi
+        $operatingTime = [];
+        foreach ($all as $item) {
+            $order_id = $item->order_id;
+            $speed = target_saps::where('kiln', $item->mesin_id)
+                ->where('size', $item->size)
+                ->first();
+            $speed_per_hour = $speed->pcs_per_hour;
+            $operating_time = $item->total_sum / $speed_per_hour * 60;
+
+            if (!isset($operatingTime[$item->mesin_id])) {
+                $operatingTime[$item->mesin_id] = [
+                    'mesin' => $item->mesin_id,
+                    'total_sum' => 0,
+                    'operating_time' => 0
+                ];
+            }
+
+            $operatingTime[$item->mesin_id]['total_sum'] += $item->total_sum;
+            $operatingTime[$item->mesin_id]['operating_time'] += $operating_time;
+        }
+        $operatingTime = array_values($operatingTime);
+        return $operatingTime;
+    }
+
+    private function getHasilKiln()
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+
+        $hasilKiln = rk_hasil_produksis::select('rk_hasil_produksis.order_id', 'rk_hasil_produksis.mesin_id', 'rk_hasil_produksis.size', 'rk_hasil_produksis.jumlah', DB::raw('rk_hasil_produksis.jumlah/target_saps.pcs_per_hour * 60 as operatingTime'))
+        ->leftJoin('target_saps', function ($join) {
+            $join->on('rk_hasil_produksis.mesin_id', '=', 'target_saps.kiln')
+                ->on('rk_hasil_produksis.size', '=', 'target_saps.size');
+        })
+        ->whereBetween('created_at', [$startDate, $endDate])
+        //->groupBy('mesin_id')
+        ->get();
+
+        return $hasilKiln;
+    }
+    */
+    /*
+    public static function getCurrentMonthDates()
+    {
+        $startDate = Carbon::now()->startOfMonth();
+        $endDate = Carbon::now()->endOfMonth();
+        $totalDays = Carbon::now()->daysInMonth;
+
+        return [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'total_days' => $totalDays
+        ];
+    }
+    */
+    /*
+    private function getPerformance()
+    {
+        $operating_time = $this->getNetOperatingTimePerOrder();
+        $downtimes = $this->getTotalDownTimes();
+        $performance = [];
+        // dd($downtimes);
+        foreach ($operating_time as $machine) {
+            $mesin = $machine['mesin'];
+            if (isset($downtimes[$mesin]) && $downtimes[$mesin] != 0) {
+                $performance[$mesin] = $machine['operating_time'] / $downtimes[$mesin] * 100;
+                $performance[$mesin] = number_format($performance[$mesin], 2);
+            } else {
+                $performance[$mesin] = 0; // Handle division by zero or missing downtime value
+            }
+        }
+        // dd($performance);
+        return $performance;
+    }
+
+    private function getSumPerformanceMesin()
+    {
+        $allPerformanceMesin = $this->getPerformanceMesin();
+        // dd($allPerformance);
+        $performanceMesin = 0;
+        $total = 0;
+        if ($allPerformanceMesin) {
+            for ($i = 0; $i < count($allPerformanceMesin); $i++) {
+                $total += $allPerformanceMesin[$i];
+            }
+            $performanceMesin = $total / count($allPerformanceMesin);
+            $performanceMesin = number_format($performanceMesin, 0);
+        }
+        return $performanceMesin;
+    }
+
+    private function getSumPerformanceSize()
+    {
+        $allPerformance = $this->getPerformance();
+        $performance = 0;
+        $total = 0;
+        if ($allPerformance) {
+            for ($i = 0; $i < count($allPerformance); $i++) {
+                $total += $allPerformance[$i];
+            }
+            $performance = $total / count($allPerformance);
+            $performance = number_format($performance, 2);
+        }
+        return $performance;
+    }
+    */
+    /*
+    private function getLineChart()
+    {
+        $start = Carbon::parse(User::min("created_at"));
+        $end = Carbon::now();
+        $period = CarbonPeriod::create($start, "1 month", $end);
+
+        $usersPerMonth = collect($period)->map(function ($date) {
+            $endDate = $date->copy()->endOfMonth();
+
+            return [
+                "count" => User::where("created_at", "<=", $endDate)->count(),
+                "month" => $endDate->format("Y-m-d")
+            ];
+        });
+
+        $data = $usersPerMonth->pluck("count")->toArray();
+        $labels = $usersPerMonth->pluck("month")->toArray();
+
+        $chart = Chartjs::build()
+            ->name("UserRegistrationsChart")
+            ->type("line")
+            ->size(["width" => 400, "height" => 200])
+            ->labels("")
+            ->datasets([
+                [
+                    "label" => "User Registrations",
+                    "backgroundColor" => "rgba(38, 185, 154, 0.31)",
+                    "borderColor" => "rgba(38, 185, 154, 0.7)",
+                    "data" => $data
+                ]
+            ])
+            ->options([
+                'scales' => [
+                    'x' => [
+                        'type' => 'time',
+                        'time' => [
+                            'unit' => 'month'
+                        ],
+                        'min' => $start->format("Y-m-d"),
+                    ]
+                ],
+                'plugins' => [
+                    'title' => [
+                        'display' => true,
+                        'text' => 'Monthly User Registrations'
+                    ]
+                ]
+            ]);
+
+        return $chart;
+    }
+
+    public function chart()
+    {
+        $fixHasilSortir = $this->getFixHasilSortir();
+        $hasilKilnByMachine = $this->getHasilKilnByMachine();
+        $groupHasilSortirByMachine = collect($fixHasilSortir)->groupBy('work_center');
+        //$groupHasilSortirByMachine = collect($fixHasilSortir)->sum('MENGE');
+        //dd($groupHasilSortirByMachine);
+        $qualityByMachine = [];
+        $total = 0;
+        foreach ($groupHasilSortirByMachine as $work_center => $rowhasilSortirByMachine)
+        {
+            $sortirHasil = $rowhasilSortirByMachine->sum('MENGE');
+            $sortirOperatingTime = $rowhasilSortirByMachine->sum('operatingTime');
+            $total += $sortirHasil;
+            foreach ($hasilKilnByMachine as $rowhasilKilnByMachine)
+            {
+                if ($work_center === $rowhasilKilnByMachine['mesin_id'])
+                {
+                    $quality = $sortirOperatingTime / $rowhasilKilnByMachine['operatingTime'] * 100;
+                    $qualityByMachine[] =
+                    [
+                        'work_center' =>  $work_center,
+                        'sortirHasil' => number_format($sortirHasil, 2),
+                        'kilnHasil' => number_format($rowhasilKilnByMachine['hasil'], 2),
+                        'sortirOperatingTime' => number_format($sortirOperatingTime, 2),
+                        'kilnOperatingTime' => number_format($rowhasilKilnByMachine['operatingTime'], 2),
+                        'quality' => number_format($quality, 2),
+                    ];
+                }
+            }
+        }
+        dd($qualityByMachine);
+        return $qualityByMachine;
+    }
+    */
+    /*
+    public function index2()
+    {
+        //get detail performance per size
+        $detailPerformanceSize = $this->getPerformance();
+        $detailPerformanceSizeGl = $this->getPerformanceGl();
+        //get sum performance size
+        // $performanceSize = $this->getSumPerformanceSize();
+        //get detail performance mesin
+        $detailPerformanceMesin = $this->getPerformanceMesin();
+        $detailPerformanceMesinGl = $this->getPerformanceMesinGl();
+        //get sum performance mesin
+        // $performanceMesin = $this->getSumPerformanceMesin();
+
+        // $quality = $this->getQuality();
+        // $oee = $performanceMesin * $quality * 100;
+        // $oee = $oee / 10000;
+        // $oee = number_format($oee, 0);
+
+        // return view('home_2', compact('oee', 'hasil', 'performance', 'allPerformance', 'all', 'allPerformanceMesin', 'allMesin', 'performanceMesin', 'quality'));
+        return view('home_2', compact('detailPerformanceSize', 'detailPerformanceMesin', 'detailPerformanceMesinGl', 'detailPerformanceSizeGl'));
+    }
+
+    private function getSize($mesin)
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        DB::statement("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+        $all = rk_hasil_produksi::with('user')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->where('mesin_id', $mesin)
+            ->groupBy('size')
+            ->get();
+        return $all;
+    }
+
+    private function getHasil()
+    {
+        $startDate = Carbon::create(2024, 3, 22, 0, 0, 0);
+        $endDate = Carbon::create(2024, 3, 31, 23, 59, 59);
+        $hasilRk = rk_hasil_produksi::with('user')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get();
+        $hasil = $hasilRk->sum('jumlah');
+        return $hasil;
+    }
+
+    private function getQuality()
+    {
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $startOfNextMonth = Carbon::now()->addMonth()->startOfMonth();
+
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        $totalHasil = rk_hasil_produksi::whereBetween('created_at', [$startDate, $endDate])
+            ->sum('jumlah');
+
+        // dd($totalHasil);
+        $quality = 1;
+        $totalHasilSortir = hasil_sortir_api::whereIn('MVGR4', ['Q01', 'Q02'])
+            //->whereIn('BWART', ['101', '531'])
+            ->sum('MENGE');
+        if ($totalHasilSortir) {
+            $quality = $totalHasilSortir / $totalHasil;
+        }
+        // dd($totalHasilSortir);
+
+        $quality = number_format($quality, 2);
+        $quality *= 100;
+        return $quality;
+    }
+
+    private function getTotalLoading($mesin, $size)
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        if ($mesin == 'gl') {
+            $gl = gl_hasil_produksi::with('user')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->get();
+            $totalGl = $gl->sum('jumlah');
+            return $totalGl;
+        } else if ($mesin == 'rk') {
+            $rk = rk_hasil_produksi::with('user')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->where('size', $size)
+                ->get();
+
+            $totalRk = $rk->sum('jumlah');
+            return $totalRk;
+        }
+    }
+
+    private function getTotalLoadingMesin($mesin, $mesin_id)
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        if ($mesin == 'gl') {
+            $gl = gl_hasil_produksi::with('user')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->get();
+            $totalGl = $gl->sum('jumlah');
+            return $totalGl;
+        } else if ($mesin == 'rk') {
+            $rk = rk_hasil_produksi::with('user')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->where('mesin_id', $mesin_id)
+                ->get();
+
+            $totalRk = $rk->sum('jumlah');
+            return $totalRk;
+        }
+    }
+
+    private function getPerformance()
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        $mesinsRk = ['RK 1', 'RK 2', 'RK 3', 'RK 4', 'RK 5'];
+        $performanceSize = [];
+        for ($x = 0; $x < 5; $x++) {
+            $allPerformance = [];
+            $sizes = [];
+            $all = $this->getSize($mesinsGl[$x]);
+            for ($i = 0; $i < count($all); $i++) {
+                $sizes[] = $all[$i]->size;
+                DB::statement("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+                $gl = gl_hasil_produksi::with('user')
+                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->where('size', $all[$i]->size)
+                    ->groupBy('order_id')
+                    ->get();
+                $target = $this->getSap($mesinsRk[$x], $all[$i]->size);
+
+                $sapFiltered = [];
+                for ($k = 0; $k < count($rk); $k++) {
+                    $order_id = $rk[$k]->order_id;
+                    for ($j = 0; $j < count($sap->data_SAP); $j++) {
+                        if ($sap->data_SAP[$j]->AUFNR == $order_id) {
+                            $sapFiltered[] = $sap->data_SAP[$j];
+                        }
+                    }
+                }
+                $tot = 0;
+                $performance = 0;
+                for ($k = 0; $k < count($sapFiltered); $k++) {
+                    $tot += $sapFiltered[$k]->GAMNG;
+                }
+                $time = $this->getDownTime($all[$i]->order_id);
+                $tot = (1440 - $time) / $target;
+                $total = $this->getTotalLoading('rk', $all[$i]->size);
+                $performance = $total * $tot / 1440;
+                $performance = $performance * 100;
+                $performance = number_format($performance, 0);
+                $allPerformance[$i] = $performance;
+            }
+            $obj = new \stdClass();
+            $obj->size = $sizes;
+            $obj->performance = $allPerformance;
+            $performanceSize[] = $obj;
+        }
+        // dd($performanceSize);
+        return $performanceSize;
+    }
+
+    private function getPerformanceGl()
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        $mesinsGl = ['GL 1', 'GL 2', 'GL 3', 'GL 4', 'GL 5'];
+        $performanceSize = [];
+        for ($x = 0; $x < 5; $x++) {
+            $allPerformance = [];
+            $sizes = [];
+            $all = $this->getSize($mesinsGl[$x]);
+            for ($i = 0; $i < count($all); $i++) {
+                $sizes[] = $all[$i]->size;
+                DB::statement("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+                $gl = gl_hasil_produksi::with('user')
+                    ->whereBetween('created_at', [$startDate, $endDate])
+                    ->where('size', $all[$i]->size)
+                    ->groupBy('order_id')
+                    ->get();
+                $sap = $this->getSap($mesinsGl[$x], $all[$i]->size);
+
+                $sapFiltered = [];
+                for ($k = 0; $k < count($gl); $k++) {
+                    $order_id = $gl[$k]->order_id;
+                    for ($j = 0; $j < count($sap->data_SAP); $j++) {
+                        if ($sap->data_SAP[$j]->AUFNR == $order_id) {
+                            $sapFiltered[] = $sap->data_SAP[$j];
+                        }
+                    }
+                }
+                $tot = 0;
+                $performance = 0;
+                for ($k = 0; $k < count($sapFiltered); $k++) {
+                    $tot += $sapFiltered[$k]->GAMNG;
+                }
+                if ($sapFiltered) {
+                    $tot = $tot / count($sapFiltered);
+                    $tot = $tot * 10;
+                    $time = $this->getDownTime($all[$i]->order_id);
+                    $tot = (1440 - $time) / $tot;
+                    $total = $this->getTotalLoading('gl', $all[$i]->size);
+                    $performance = $total * $tot / 1440;
+                    $performance = $performance * 100;
+                    $performance = number_format($performance, 0);
+                }
+                $allPerformance[$i] = $performance;
+            }
+            $obj = new \stdClass();
+            $obj->size = $sizes;
+            $obj->performance = $allPerformance;
+            $performanceSize[] = $obj;
+        }
+        // dd($performanceSize);
+        return $performanceSize;
+    }
+
+    private function getDownTime($order)
+    {
+        $time = down_time::where('order_id', $order)
+            ->get();
+        $downTimeTotal = 0;
+        for ($i = 0; $i < count($time); $i++) {
+            $startDateTime = DateTime::createFromFormat('His', $time[$i]->start_time);
+            $finishDateTime = DateTime::createFromFormat('His', $time[$i]->finish_time);
+            $interval = $startDateTime->diff($finishDateTime);
+            $minutesDifference = ($interval->h * 60) + $interval->i;
+            $downTimeTotal += $minutesDifference;
+        }
+        return $downTimeTotal;
+    }
+
+    private function getPerformanceMesin()
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        $allPerformance = [];
+        $mesinsRk = ['RK 1', 'RK 2', 'RK 3', 'RK 4', 'RK 5'];
+        for ($i = 0; $i < 5; $i++) {
+            DB::statement("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+            $rk = rk_hasil_produksi::with('user')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->where('mesin_id', $mesinsRk[$i])
+                ->groupBy('order_id')
+                ->get();
+            $sap = $this->getSap($mesinsRk[$i], '20x20');
+
+            $sapFiltered = [];
+            for ($k = 0; $k < count($rk); $k++) {
+                $order_id = $rk[$k]->order_id;
+                for ($j = 0; $j < count($sap->data_SAP); $j++) {
+                    if ($sap->data_SAP[$j]->AUFNR == $order_id) {
+                        $sapFiltered[] = $sap->data_SAP[$j];
+                    }
+                }
+            }
+            $tot = 0;
+            for ($k = 0; $k < count($sapFiltered); $k++) {
+                $tot += $sapFiltered[$k]->GAMNG;
+            }
+            // dd($sapFiltered);
+            $performance = 0;
+            if ($sapFiltered) {
+                $tot = $tot / count($sapFiltered);
+                $tot = $tot * 10;
+                // dd($tot);
+                // if ($tot > 30522) {
+                //     $tot = 30522;
+                // }
+                $tot = 1440 / $tot;
+                $total = $this->getTotalLoadingMesin('rk', $mesinsRk[$i]);
+                // dd($total);
+                $performance = $total * $tot / 1440;
+                $performance = $performance * 100;
+                $performance = number_format($performance, 0);
+            }
+            $allPerformance[$i] = $performance;
+        }
+        return $allPerformance;
+    }
+
+    public function index(){
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+
+        $downtimeByMachine = down_time::select('work_center', DB::raw('SUM(total) as downTime'))
+        ->whereBetween('created_at', [$startDate, $endDate])
+        ->groupBy('work_center')
+        ->get();
+        //$base = $this->getAvailabilityByMachine();
+        $planProdDay = 31;
+        $planProdTime = 1440;//minutes of 24hour
+        $sumPlanProdTime = $planProdDay * $planProdTime;
+        foreach ($downtimeByMachine as $rowbase) {
+            $operatingTime = $sumPlanProdTime - $rowbase->downTime;
+            $operatingDate = $rowbase->created_at;
+
+            $data =
+            [
+                2024,
+                $sumPlanProdTime,
+                $operatingTime,
+            ];
+            $availabilityByMachine[] = $data;
+        }
+        //$array = implode(',',$data);
+        return view('line-chart', compact('data'));
+    }
+
+    private function getPerformanceMesinGl()
+    {
+        $startDate = Carbon::create(2024, 5, 1, 0, 0, 0);
+        $endDate = Carbon::create(2024, 5, 31, 23, 59, 59);
+        $allPerformance = [];
+        $mesinsGl = ['GL 1', 'GL 2', 'GL 3', 'GL 4', 'GL 5'];
+        for ($i = 0; $i < 5; $i++) {
+            DB::statement("SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+            $gl = gl_hasil_produksi::with('user')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->where('mesin_id', $mesinsGl[$i])
+                ->groupBy('order_id')
+                ->get();
+            $sap = $this->getSap($mesinsGl[$i], '20x20');
+
+            $sapFiltered = [];
+            for ($k = 0; $k < count($gl); $k++) {
+                $order_id = $gl[$k]->order_id;
+                for ($j = 0; $j < count($sap->data_SAP); $j++) {
+                    if ($sap->data_SAP[$j]->AUFNR == $order_id) {
+                        $sapFiltered[] = $sap->data_SAP[$j];
+                    }
+                }
+            }
+            $tot = 0;
+            for ($k = 0; $k < count($sapFiltered); $k++) {
+                $tot += $sapFiltered[$k]->GAMNG;
+            }
+            // dd($sapFiltered);
+            $performance = 0;
+            if ($sapFiltered) {
+                $tot = $tot / count($sapFiltered);
+                $tot = $tot * 10;
+                // dd($tot);
+                // if ($tot > 30522) {
+                //     $tot = 30522;
+                // }
+                $tot = 1440 / $tot;
+                $total = $this->getTotalLoadingMesin('gl', $mesinsGl[$i]);
+                // dd($total);
+                $performance = $total * $tot / 1440;
+                $performance = $performance * 100;
+                $performance = number_format($performance, 0);
+            }
+            $allPerformance[$i] = $performance;
+        }
+        return $allPerformance;
+    }
+    */
