@@ -53,63 +53,63 @@ class AbsensiController extends Controller
     }
     public function getAbsensi(Request $request)
     {
-        $response = Http::timeout(50)
-            ->get('http://172.31.3.13/ci-milan-restserver-wa/index.php/Absensiraw_GetByArea?areakerja=' . $request->kodeArea . '&kodegroup=' . $request->kodeGrup);
-        $data = $response->body();
-        $users = json_decode($data);
+        // Fetch users from API
+        $users = Http::timeout(50)->get(
+            'http://172.31.3.13/ci-milan-restserver-wa/index.php/Absensiraw_GetByArea',
+            [
+                'areakerja' => $request->kodeArea,
+                'kodegroup' => $request->kodeGrup,
+            ]
+        )->json();
 
-        // Mendapatkan user yang memiliki role operator dan bukan karu
-        $filterArr = array_filter($users, function ($user) use ($request) {
-            return $user->nip != $request->karu_id;
-        });
-
-        // Mendapatkan user yang tidak duplicated
-        $uniqueUsers = array_reduce($filterArr, function ($carry, $user) {
-            if (!isset($carry[$user->nip])) {
-                $carry[$user->nip] = $user;
-            }
-            return $carry;
-        }, []);
-
-        $filteredUser = array_values($uniqueUsers);
-
-        // Get the existing absensi data from the database
-        $dbAbsensi = DB::table('absensi_opr_for_karu')
-            ->join('users', 'absensi_opr_for_karu.opr_id', '=', 'users.nip')
-            ->where('absensi_opr_for_karu.kode_group', $request->kodeGrup)
-            ->whereDate('absensi_opr_for_karu.created_at', Carbon::today())
-            ->select('absensi_opr_for_karu.opr_id') // Only select the 'opr_id' field to check duplicates
-            ->get()
-            ->pluck('opr_id') // Pluck 'opr_id' to get a simple list of existing 'opr_id'
-            ->toArray(); // Convert to array for easier comparison
-
-        // Check if users already exist in the database and insert if not
-        if (sizeof($filteredUser) > 0) {
-            foreach ($filteredUser as $user) {
-                // Check if this user already exists in the database
-                if (!in_array($user->nip, $dbAbsensi)) {
-                    $absensi = new absensi_opr_for_karu();
-                    $absensi->karu_id = $request->karu_id;
-                    $absensi->opr_id = $user->nip;
-                    $absensi->kode_group = $request->kodeGrup;
-                    $absensi->kode_area = $request->kodeArea;
-                    $absensi->kehadiran = $user->tgl != '' ? $user->tgl : null;
-                    $absensi->cek_log = $user->tgl != '' ? $user->tgl : null;
-                    $absensi->save();
-                }
-            }
+        if (!$users) {
+            return response()->json(['data' => []], 200);
         }
 
+        // Filter out karu_id and remove duplicates by nip
+        $filteredUsers = collect($users)
+            ->reject(fn($user) => $user['nip'] == $request->karu_id)
+            ->unique('nip')
+            ->values();
+
+        // Fetch existing absensi for today
+        $existingAbsensi = DB::table('absensi_opr_for_karu')
+            ->where('kode_group', $request->kodeGrup)
+            ->whereDate('created_at', Carbon::today())
+            ->pluck('opr_id')
+            ->toArray();
+
+        // Insert only new users
+        $newRecords = $filteredUsers
+            ->reject(fn($user) => in_array($user['nip'], $existingAbsensi))
+            ->map(fn($user) => [
+                'karu_id'    => $request->karu_id,
+                'opr_id'     => $user['nip'],
+                'kode_group' => $request->kodeGrup,
+                'kode_area'  => $request->kodeArea,
+                'kehadiran'  => $user['tgl'] ?: null,
+                'cek_log'    => $user['tgl'] ?: null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])
+            ->all();
+
+        if (!empty($newRecords)) {
+            DB::table('absensi_opr_for_karu')->insert($newRecords);
+        }
+
+        // Return joined absensi data for today
         $absensi = DB::table('absensi_opr_for_karu')
             ->join('users', 'absensi_opr_for_karu.opr_id', '=', 'users.nip')
             ->where('absensi_opr_for_karu.kode_area', $request->kodeArea)
             ->where('absensi_opr_for_karu.kode_group', $request->kodeGrup)
             ->whereDate('absensi_opr_for_karu.created_at', Carbon::today())
-            ->select('absensi_opr_for_karu.*', 'users.nama as nama') // Select the columns you need
+            ->select('absensi_opr_for_karu.*', 'users.nama')
             ->get();
 
         return response()->json(['data' => $absensi]);
     }
+
     public function updateAbsensi(Request $request)
     {
         $absensi = absensi_opr_for_karu::find($request->id);

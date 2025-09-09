@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class rk_hasil_produksi extends Model
 {
     use HasFactory;
-    public $timestamps = false;
+    public $timestamps = true;
     protected $fillable = [
         'shift_id',
         'order_id',
