@@ -15,7 +15,9 @@ return new class extends Migration
     {
         Schema::table('detail_qc_po', function (Blueprint $table) {
             //$table->dropForeign(['id_header_po']);
-            $table->dropColumn('id_header_po');
+            if (Schema::hasColumn('detail_qc_po', 'id_header_po')) {
+                $table->dropColumn('id_header_po');
+            }
         });
     }
 

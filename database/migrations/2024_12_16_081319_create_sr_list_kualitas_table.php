@@ -13,15 +13,17 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('sr_list_kualitas', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sr_analisa_id')->references('id')->on('sr_analisa_kualitas')->onDelete('cascade');
-            $table->string('cacat_id', 100)->references('id')->on('sr_jenis_cacat')->onDelete('cascade');
-            $table->string('kw', 100);
-            $table->string('jumlah', 100);
-            $table->string('keterangan', 100);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('sr_list_kualitas')) {
+            Schema::create('sr_list_kualitas', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('sr_analisa_id')->references('id')->on('sr_analisa_kualitas')->onDelete('cascade');
+                $table->string('cacat_id', 100)->references('id')->on('sr_jenis_cacat')->onDelete('cascade');
+                $table->string('kw', 100);
+                $table->string('jumlah', 100);
+                $table->string('keterangan', 100);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

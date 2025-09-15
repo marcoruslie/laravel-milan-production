@@ -14,7 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('hasil_sortir_apis', function (Blueprint $table) {
-            $table->string('IDNRK');
+            if (!Schema::hasColumn('hasil_sortir_apis', 'IDNRK')) {
+                $table->string('IDNRK');
+            }
         });
     }
 

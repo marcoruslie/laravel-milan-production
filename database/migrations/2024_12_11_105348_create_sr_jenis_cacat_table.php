@@ -13,12 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('sr_jenis_cacat', function (Blueprint $table) {
-            $table->id();
-            $table->string('jenis_cacat', 100);
-            $table->string('tipe', 100);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('sr_jenis_cacat')) {
+            Schema::create('sr_jenis_cacat', function (Blueprint $table) {
+                $table->id();
+                $table->string('jenis_cacat', 100);
+                $table->string('tipe', 100);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

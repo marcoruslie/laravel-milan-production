@@ -14,7 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('bp_rekap_hasil_powders', function (Blueprint $table) {
-            $table->unsignedBigInteger('kode_material')->default(0)->after('user_id');
+            if (!Schema::hasColumn('bp_rekap_hasil_powders', 'kode_material')) {
+                $table->unsignedBigInteger('kode_material')->default(0)->after('user_id');
+            }
         });
     }
 

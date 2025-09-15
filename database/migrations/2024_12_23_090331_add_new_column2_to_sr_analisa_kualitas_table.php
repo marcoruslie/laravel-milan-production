@@ -15,7 +15,9 @@ return new class extends Migration
     {
         Schema::table('sr_analisa_kualitas', function (Blueprint $table) {
             //
-            $table->string('jenis_tile', 100)->after('kode_size');
+            if (!Schema::hasColumn('sr_analisa_kualitas', 'jenis_tile')) {
+                $table->string('jenis_tile', 100)->after('kode_size');
+            }
         });
     }
 

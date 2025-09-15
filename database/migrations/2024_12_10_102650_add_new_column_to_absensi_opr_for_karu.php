@@ -14,7 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('absensi_opr_for_karu', function (Blueprint $table) {
-            $table->string('cek_log')->nullable();
+            if (!Schema::hasColumn('absensi_opr_for_karu', 'kehadiran')) {
+                $table->string('cek_log')->nullable();
+            }
         });
     }
 

@@ -13,17 +13,19 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('report_target_produksi', function (Blueprint $table) {
-            $table->id();
-            $table->string('po_id');
-            $table->string('po_date');
-            $table->string('start_hour');
-            $table->string('material_desc');
-            $table->string('hasil');
-            $table->string('target');
-            $table->string('keterangan');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('report_target_produksi')) {
+            Schema::create('report_target_produksi', function (Blueprint $table) {
+                $table->id();
+                $table->string('po_id');
+                $table->string('po_date');
+                $table->string('start_hour');
+                $table->string('material_desc');
+                $table->string('hasil');
+                $table->string('target');
+                $table->string('keterangan');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

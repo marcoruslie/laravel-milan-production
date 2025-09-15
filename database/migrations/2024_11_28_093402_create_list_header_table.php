@@ -13,14 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('list_header_po', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('po_id');
-            $table->string('po_date');
-            $table->string('material_desc');
-            $table->string('status_qc');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('list_header_po')) {
+            Schema::create('list_header_po', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('po_id');
+                $table->string('po_date');
+                $table->string('material_desc');
+                $table->string('status_qc');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

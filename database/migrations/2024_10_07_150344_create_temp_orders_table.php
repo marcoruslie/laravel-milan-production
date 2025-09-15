@@ -13,13 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('temp_orders', function (Blueprint $table) {
-            $table->id();
-            $table->string('order_id');
-            $table->string('material_number');
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        if (!Schema::hasTable('temp_orders')) {
+            Schema::create('temp_orders', function (Blueprint $table) {
+                $table->id();
+                $table->string('order_id');
+                $table->string('material_number');
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
     /**

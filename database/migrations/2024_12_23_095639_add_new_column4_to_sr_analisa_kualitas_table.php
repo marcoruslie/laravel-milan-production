@@ -14,7 +14,10 @@ return new class extends Migration
     public function up()
     {
         Schema::table('sr_analisa_kualitas', function (Blueprint $table) {
-            $table->string('speed_kiln', 100)->after('kode_size')->nullable()->change();
+            //
+            if (Schema::hasColumn('sr_analisa_kualitas', 'speed_kiln')) {
+                $table->string('speed_kiln', 100)->after('kode_size')->nullable()->change();
+            }
         });
     }
 

@@ -14,8 +14,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table('list_header_po', function (Blueprint $table) {
-            $table->string('user_id')->nullable();
-            $table->string('approval_at')->nullable();
+            if (!Schema::hasColumn('list_header_po', 'user_id')) {
+                $table->string('user_id')->nullable();
+            }
+            if (!Schema::hasColumn('list_header_po', 'approval_at')) {
+                $table->string('approval_at')->nullable();
+            }
         });
     }
 

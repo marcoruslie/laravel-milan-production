@@ -14,7 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('sr_analisa_kualitas', function (Blueprint $table) {
-            $table->string('size', 100)->after('kode_size')->nullable();
+            if (!Schema::hasColumn('sr_analisa_kualitas', 'size')) {
+                $table->string('size', 100)->after('kode_size')->nullable();
+            }
         });
     }
 

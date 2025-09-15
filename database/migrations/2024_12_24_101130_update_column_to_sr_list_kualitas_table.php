@@ -14,8 +14,13 @@ return new class extends Migration
     public function up()
     {
         Schema::table('sr_list_kualitas', function (Blueprint $table) {
-            $table->dropColumn('kw');
-            $table->dropColumn('jumlah');
+            //
+            if (Schema::hasColumn('sr_list_kualitas', 'kw')) {
+                $table->dropColumn('kw');
+            }
+            if (Schema::hasColumn('sr_list_kualitas', 'jumlah')) {
+                $table->dropColumn('jumlah');
+            }
             $table->string('kw2')->nullable();
             $table->string('kw3')->nullable();
             $table->string('kw4')->nullable();

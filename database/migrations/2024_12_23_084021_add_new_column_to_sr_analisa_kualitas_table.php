@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+
         Schema::table('sr_analisa_kualitas', function (Blueprint $table) {
             $table->string('no_ph', 100)->after('kode_size')->nullable();
             $table->string('no_hd', 100)->after('no_ph')->nullable();

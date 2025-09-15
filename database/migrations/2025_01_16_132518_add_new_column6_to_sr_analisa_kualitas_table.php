@@ -14,7 +14,9 @@ return new class extends Migration
     public function up()
     {
         Schema::table('sr_analisa_kualitas', function (Blueprint $table) {
-            $table->string('material_desc', 100)->after('size')->nullable();
+            if (!Schema::hasColumn('sr_analisa_kualitas', 'material_desc')) {
+                $table->string('material_desc', 100)->after('size')->nullable();
+            }
         });
     }
 

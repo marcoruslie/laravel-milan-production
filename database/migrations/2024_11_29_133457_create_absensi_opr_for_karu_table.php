@@ -13,14 +13,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('absensi_opr_for_karu', function (Blueprint $table) {
-            $table->id();
-            $table->string('karu_id');
-            $table->string('opr_id');
-            $table->string('kode_group');
-            $table->string('kode_area');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('absensi_opr_for_karu')) {
+            Schema::create('absensi_opr_for_karu', function (Blueprint $table) {
+                $table->id();
+                $table->string('karu_id');
+                $table->string('opr_id');
+                $table->string('kode_group');
+                $table->string('kode_area');
+                $table->timestamps();
+            });
+        }
     }
 
     /**
