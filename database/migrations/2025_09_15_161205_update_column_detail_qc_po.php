@@ -17,7 +17,6 @@ return new class extends Migration
             //
             if (Schema::hasColumn('detail_qc_po', 'po_id')) {
                 $table->renameColumn('po_id', 'id');
-                $table->string('po_id')->references('po_id')->on('list_header_po')->onDelete('cascade');;
             }
         });
     }
