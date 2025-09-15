@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::table('detail_qc_po', function (Blueprint $table) {
             //
-            $table->string('po_id')->references('po_id')->on('list_header_po')->onDelete('cascade');
+            $table->string('po_id')->after('id')->references('po_id')->on('list_header_po')->onDelete('cascade');
         });
     }
 
