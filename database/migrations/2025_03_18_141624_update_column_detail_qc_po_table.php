@@ -17,11 +17,15 @@ return new class extends Migration
             if (Schema::hasColumn('detail_qc_po', 'nip')) {
                 $table->dropColumn('nip');
             }
-            $table->string('nip_user')->references('nip')->on('users')->onDelete('cascade');
+            if (!Schema::hasColumn('detail_qc_po', 'nip_user')) {
+                $table->string('nip_user')->references('nip')->on('users')->onDelete('cascade');
+            }
             if (Schema::hasColumn('detail_qc_po', 'id_header_po')) {
                 $table->dropColumn('id_header_po');
             }
-            $table->foreignId('id_header_po')->references('po_id')->on('list_header_po')->onDelete('cascade');
+            if (!Schema::hasColumn('detail_qc_po', 'id_header_po')) {
+                $table->foreignId('id_header_po')->references('po_id')->on('list_header_po')->onDelete('cascade');
+            }
         });
     }
 
