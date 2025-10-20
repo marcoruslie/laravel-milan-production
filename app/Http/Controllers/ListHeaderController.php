@@ -42,7 +42,11 @@ class ListHeaderController extends Controller
         $list_header_po = list_header_po::where('po_date', $date)->orWhere('po_date', $dayBefore)->orWhere('po_date', $dayAfter)->get();
         return response()->json(['headerResponse' => $list_header_po]);
     }
-
+    public function getSize()
+    {
+        $standards = itp_standards::select('size')->distinct()->get();
+        return response()->json(['sizes' => $standards]);
+    }
     public function getOneHeader($po_id)
     {
         $header = list_header_po::where('po_id', $po_id)->get();

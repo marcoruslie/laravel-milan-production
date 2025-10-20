@@ -260,6 +260,7 @@ Route::name("list_header.")->prefix("list_header")->group(function ($router) {
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/getHeader/{date}', [ListHeaderController::class, 'getHeader']);
         Route::get('/getOneHeader/{po_id}', [ListHeaderController::class, 'getOneHeader']);
+        Route::get('/getSize', [ListHeaderController::class, 'getSize']);
         Route::post('/createHeader', [ListHeaderController::class, 'createHeader']);
         Route::post('/updateHeader/{po_id}', [ListHeaderController::class, 'updateStatusQcHeader']);
         Route::post('/createDetailQcPo', [ListHeaderController::class, 'createDetailQcPo']);
