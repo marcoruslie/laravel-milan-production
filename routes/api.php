@@ -28,6 +28,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 Route::post('/home/addDataSortir', [adminHomeController::class, 'add'])->name('add');
 Route::post('/home/addDataKiln', [adminHomeController::class, 'addHasilKiln'])->name('addHasilKiln');
+Route::get('/home/importProgress/{jobId}', [adminHomeController::class, 'importProgress']);
 Route::get('/home/getUser/{nip}', [AuthController::class, 'getDataUser']);
 //Header Section
 Route::name("header.")->prefix("header")->group(function ($router) {
